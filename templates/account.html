@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My account</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <style>
+.avatar {
+  vertical-align: middle;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+}
+</style>
+</head>
+<body style="background-color:#F3E2A9">
+<div style="background-color:#F3E2A9;">
+
+    <p style="padding-bottom: 20px;"></p>
+    <img src="/static/img/profpic1.jpeg" alt="Avatar" class="avatar" style="display: block; margin: 0 auto;">
+
+    <center>
+    <font size="12">
+    <p style="padding-bottom: 10px; margin: 0 auto;">Привет, {{ username }}!</p>
+    </font>
+    </center>
+
+    <form action="http://127.0.0.1:8080/mybooks">
+        <input type="submit" value="My books" style="display: block; margin: 0 auto;"/>
+        <p style="padding-bottom: 10px;"></p>
+    </form>
+
+    <form action="http://127.0.0.1:8080/allbooks">
+        <input type="submit" value="All books" style="display: block; margin: 0 auto;"/>
+        <p style="padding-bottom: 10px;"></p>
+    </form>
+</div>
+</body>
+</html>
