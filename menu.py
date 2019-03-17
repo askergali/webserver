@@ -2,12 +2,57 @@ from flask import Flask
 from flask import render_template
 from flask import request
 from flask import redirect
+from flask_wtf import Form
 from flask import Flask, flash, redirect, render_template, request, session, abort
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+from forms import SignupForm
+from flask_wtf.csrf import CSRFProtect
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug import generate_password_hash, check_password_hash
+from wtforms import StringField, PasswordField, SubmitField
 
+
+app = Flask(__name__)
+csrf = CSRFProtect(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://localhost/users'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+app.secret_key = "development-key"
+
+db.init_app(app)
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    uid = db.Column(db.Integer, primary_key=True)
+    firstname = db.Column(db.String(100))
+    lastname = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True)
+    pwdhash = db.Column(db.String(54))
+
+    def __init__(self, firstname, lastname, email, password):
+        self.firstname = firstname.title()
+        self.lastname = lastname.title()
+        self.email = email.lower()
+        self.set_password(password)
+
+    def set_password(self, password):
+        self.pwdhash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.pwdhash, password)
+
+
+
+class SignupForm(Form):
+    first_name = StringField('First name')
+    last_name = StringField('Last name')
+    password = PasswordField('Password')
+    submit = SubmitField('Sign up')
 
 class DB_users:
     def __init__(self):
@@ -121,7 +166,7 @@ class BooksModel:
         self.connection.commit()
 
 class LoginForm:
-    user_name = StringField("Введите логин", validators=[DataRequired()])
+    username = StringField("Введите логин", validators=[DataRequired()])
     password = TextAreaField('Введите пароль', validators=[DataRequired()])
     submit = SubmitField('Войти')
 
@@ -152,6 +197,8 @@ def menu():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        if request.form['password'] == 'password' and request.form['username'] == 'admin':
+            session['logged_in'] = True
         user_name = form.username.data
         password = form.password.data
         user_model = UsersModel(DB_users.get_connection())
@@ -159,17 +206,22 @@ def login():
         if (exists[0]):
             session['username'] = user_name
             session['user_id'] = exists[1]
-    return redirect("/index")
+    return render_template('login.html')
+
 
     if user_model.exists(request.form['email'], request.form['pswd']):
         username = user_model.get_username(request.form['email'])
         session['username'] = username
-    return redirect('/main')
+    return redirect('/login')
 
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    return 'signup'
+    form = SignupForm(request.form)
+    if request.method == 'POST':
+        return "Success!"
+    elif request.method == 'GET':
+        return render_template("signup.html", form=form)
 
 
 @app.route('/account', methods=['GET', 'POST'])
@@ -209,4 +261,5 @@ def add_book():
 
 
 if __name__ == '__main__':
+    app.debug = True
     app.run(port=8080, host='127.0.0.1')
