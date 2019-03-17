@@ -2,6 +2,10 @@ from flask import Flask
 from flask import render_template
 from flask import request
 from flask import redirect
+from flask import Flask, flash, redirect, render_template, request, session, abort
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired
 import sqlite3
 
 
@@ -116,6 +120,12 @@ class BooksModel:
         cursor.close()
         self.connection.commit()
 
+class LoginForm:
+    user_name = StringField("Введите логин", validators=[DataRequired()])
+    password = TextAreaField('Введите пароль', validators=[DataRequired()])
+    submit = SubmitField('Войти')
+
+
 
 database_users = DB_users()
 usersmodel = UsersModel(database_users.get_connection())
@@ -124,7 +134,7 @@ database_books = DB_books()
 booksmodel = BooksModel(database_books.get_connection())
 
 app = Flask(__name__)
-
+form = LoginForm()
 
 @app.route('/')
 @app.route('/menu', methods=['GET', 'POST'])
@@ -141,11 +151,20 @@ def menu():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    return 'login'
-    if yes:
-        return redirect('/account')
-    else:
-        return redirect('/signup')
+    if request.method == 'POST':
+        user_name = form.username.data
+        password = form.password.data
+        user_model = UsersModel(DB_users.get_connection())
+        exists = user_model.exists(user_name, password)
+        if (exists[0]):
+            session['username'] = user_name
+            session['user_id'] = exists[1]
+    return redirect("/index")
+
+    if user_model.exists(request.form['email'], request.form['pswd']):
+        username = user_model.get_username(request.form['email'])
+        session['username'] = username
+    return redirect('/main')
 
 
 @app.route('/signup', methods=['GET', 'POST'])
