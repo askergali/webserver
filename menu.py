@@ -1,58 +1,19 @@
+import os
+
 from flask import Flask
+from flask import flash
 from flask import render_template
 from flask import request
 from flask import redirect
-from flask_wtf import Form
-from flask import Flask, flash, redirect, render_template, request, session, abort
-from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired
 import sqlite3
-from flask_sqlalchemy import SQLAlchemy
-from forms import SignupForm
-from flask_wtf.csrf import CSRFProtect
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug import generate_password_hash, check_password_hash
-from wtforms import StringField, PasswordField, SubmitField
+from flask import send_from_directory
+from flask import session
+from flask import url_for
+from flask_wtf import FlaskForm
+from werkzeug.utils import secure_filename
+from wtforms import StringField, SubmitField, PasswordField, BooleanField, FileField
+from wtforms.validators import DataRequired
 
-
-app = Flask(__name__)
-csrf = CSRFProtect(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://localhost/users'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-app.secret_key = "development-key"
-
-db.init_app(app)
-
-
-class User(db.Model):
-    __tablename__ = 'users'
-    uid = db.Column(db.Integer, primary_key=True)
-    firstname = db.Column(db.String(100))
-    lastname = db.Column(db.String(100))
-    email = db.Column(db.String(120), unique=True)
-    pwdhash = db.Column(db.String(54))
-
-    def __init__(self, firstname, lastname, email, password):
-        self.firstname = firstname.title()
-        self.lastname = lastname.title()
-        self.email = email.lower()
-        self.set_password(password)
-
-    def set_password(self, password):
-        self.pwdhash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.pwdhash, password)
-
-
-
-class SignupForm(Form):
-    first_name = StringField('First name')
-    last_name = StringField('Last name')
-    password = PasswordField('Password')
-    submit = SubmitField('Sign up')
 
 class DB_users:
     def __init__(self):
@@ -155,7 +116,7 @@ class BooksModel:
             cursor.execute("SELECT * FROM books WHERE user_id = ?",
                            (str(books_id),))
         else:
-            cursor.execute("SELECT * FROM news")
+            cursor.execute("SELECT * FROM books")
         rows = cursor.fetchall()
         return rows
 
@@ -165,11 +126,30 @@ class BooksModel:
         cursor.close()
         self.connection.commit()
 
-class LoginForm:
-    username = StringField("Введите логин", validators=[DataRequired()])
-    password = TextAreaField('Введите пароль', validators=[DataRequired()])
+
+class AddBookForm(FlaskForm):
+    title = StringField('Название книги', validators=[DataRequired()])
+    image = StringField('Обложка книги', validators=[DataRequired()])
+    submit = SubmitField('Добавить')
+
+
+class File(FlaskForm):
+    title = StringField('Title of the book', validators=[DataRequired()])
+    file = FileField()
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Логин', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
 
+
+class SignUpForm(FlaskForm):
+    username = StringField('Логин', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    admit = BooleanField('Условия')
+    submit = SubmitField('Зарегистрироваться')
 
 
 database_users = DB_users()
@@ -178,8 +158,24 @@ usersmodel = UsersModel(database_users.get_connection())
 database_books = DB_books()
 booksmodel = BooksModel(database_books.get_connection())
 
+booksmodel.init_table()
+usersmodel.init_table()
+
+usersmodel.insert('username', 'password')
+
 app = Flask(__name__)
-form = LoginForm()
+app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+
+UPLOAD_FOLDER = '/static/books'
+ALLOWED_EXTENSIONS = set(['pdf'])
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @app.route('/')
 @app.route('/menu', methods=['GET', 'POST'])
@@ -196,38 +192,48 @@ def menu():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        if request.form['password'] == 'password' and request.form['username'] == 'admin':
-            session['logged_in'] = True
+    form = LoginForm()
+    if form.validate_on_submit():
         user_name = form.username.data
         password = form.password.data
-        user_model = UsersModel(DB_users.get_connection())
-        exists = user_model.exists(user_name, password)
+        usersmodel = UsersModel(database_users.get_connection())
+        exists = usersmodel.exists(user_name, password)
         if (exists[0]):
             session['username'] = user_name
             session['user_id'] = exists[1]
-    return render_template('login.html')
+        return redirect('/account')
+    return render_template('login.html', title='Login', form=form)
 
 
-    if user_model.exists(request.form['email'], request.form['pswd']):
-        username = user_model.get_username(request.form['email'])
-        session['username'] = username
-    return redirect('/login')
+@app.route('/logout')
+def logout():
+    session.pop('username', 0)
+    session.pop('user_id', 0)
+    return redirect('/menu')
 
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    form = SignupForm(request.form)
-    if request.method == 'POST':
-        return "Success!"
-    elif request.method == 'GET':
-        return render_template("signup.html", form=form)
+    form = SignUpForm()
+    if form.validate_on_submit():
+        user_name = form.username.data
+        password = form.password.data
+        usersmodel = UsersModel(database_users.get_connection())
+        usersmodel.insert(user_name, password)
+        return redirect('/login')
+
+    return render_template('signup.html', form=form)
+
+
+@app.route('/contacts', methods=['GET', 'POST'])
+def contacts():
+    return render_template('contacts.html')
 
 
 @app.route('/account', methods=['GET', 'POST'])
 def account():
     if request.method == 'GET':
-        return render_template('account.html')
+        return render_template('account.html', username=session['username'])
 
     elif request.method == 'POST':
         if request.form['allbooks']:
@@ -238,28 +244,64 @@ def account():
 
 @app.route('/allbooks', methods=['GET', 'POST'])
 def allbooks():
-    if request.method == 'GET':
-        return render_template('allbooks.html')
+    if 'username' not in session:
+        return redirect('/login')
+    books = BooksModel(database_books.get_connection()).get_all()
 
-    # elif request.method == 'POST':
-        # back button
+    return render_template('allbooks.html', username=session['username'], books=books)
 
 
 @app.route('/mybooks', methods=['GET', 'POST'])
 def mybooks():
-    if request.method == 'GET':
-        return render_template('mybooks.html')
+    if 'username' not in session:
+        return redirect('/login')
+    books = BooksModel(database_books.get_connection()).get_all(session['user_id'])
 
-    # elif request.method == 'POST':
-        # back button
+    return render_template('mybooks.html', username=session['username'], books=books)
 
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
-    if request.method == 'GET':
-        return render_template('add_book.html')
+    if 'username' not in session:
+        return redirect('/login')
+    form = AddBookForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        image = form.image.data
+        booksmodel = BooksModel(database_books.get_connection())
+        booksmodel.insert(title, image, session['user_id'])
+        return redirect('/mybooks')
+
+    return render_template('add_book.html', form=form, username=session['username'])
+
+
+@app.route('/delete_book/<int:books_id>', methods=['GET'])
+def delete_books(books_id):
+    if 'username' not in session:
+        return redirect('/login')
+    nm = BooksModel(database_books.get_connection())
+    nm.delete(books_id)
+    return redirect("/mybooks")
+
+
+@app.route('/addbook', methods=['GET', 'POST'])
+def addbook():
+    form = File()
+    if form.validate_on_submit():
+        title = form.title.data
+        file = form.file.data
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            return redirect(url_for('uploaded_file',
+                                    filename=filename))
+
+        booksmodel = BooksModel(database_books.get_connection())
+        booksmodel.insert(title, (os.path.join(app.config['UPLOAD_FOLDER'], file)), session['user_id'])
+        return redirect('/mybooks')
+
+    return render_template('addbook.html', form=form)
 
 
 if __name__ == '__main__':
-    app.debug = True
     app.run(port=8080, host='127.0.0.1')
