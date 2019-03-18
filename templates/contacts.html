@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Add books</title>
+    <title>Contacts</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
     <style>
         ul {
   list-style-type: none;
@@ -39,35 +40,16 @@ li a:hover:not(.active) {
     </style>
 </head>
 <body style="background-color:#F3E2A9">
-
-    <ul>
+ <ul>
         <li><a href="/menu">Menu</a></li>
         <li><a href="/contacts">Contacts</a></li>
         <li style="float:right"><a class="active" href="/logout">Log out</a></li>
     </ul>
-
-    <form action="" method="post" novalidate>
-        {{ form.hidden_tag() }}
-        <p>
-            {{ form.title.label }}<br>
-            {{ form.title }}<br>
-            {% for error in form.title.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
-                </div>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.image.label }}<br>
-            {{ form.image }}<br>
-            {% for error in form.image.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
-                </div>
-            {% endfor %}
-        </p>
-        <p>{{ form.submit() }}</p>
-    </form>
-
+<center>
+    <font size="10">
+    <p style="padding-top: 20px; padding-bottom: 10px; margin: 0 auto; color: #333;">Our address:</p>
+        <p style="padding-bottom: 10px; margin: 0 auto; color: #333;">*smth*</p>
+    </font>
+    </center>
 </body>
 </html>

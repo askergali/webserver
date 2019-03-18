@@ -2,14 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Add books</title>
+    <title>Add book</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <style>
-        ul {
+.avatar {
+  vertical-align: middle;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+}
+ul {
   list-style-type: none;
   margin: 0;
   padding: 0;
@@ -36,18 +42,19 @@ li a:hover:not(.active) {
 .active {
   background-color: #333;
 }
-    </style>
+</style>
 </head>
 <body style="background-color:#F3E2A9">
-
+<body>
     <ul>
         <li><a href="/menu">Menu</a></li>
         <li><a href="/contacts">Contacts</a></li>
         <li style="float:right"><a class="active" href="/logout">Log out</a></li>
     </ul>
 
-    <form action="" method="post" novalidate>
-        {{ form.hidden_tag() }}
+    <br>
+
+    <form method=post enctype=multipart/form-data>
         <p>
             {{ form.title.label }}<br>
             {{ form.title }}<br>
@@ -57,17 +64,9 @@ li a:hover:not(.active) {
                 </div>
             {% endfor %}
         </p>
-        <p>
-            {{ form.image.label }}<br>
-            {{ form.image }}<br>
-            {% for error in form.image.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
-                </div>
-            {% endfor %}
-        </p>
-        <p>{{ form.submit() }}</p>
-    </form>
 
+        <input type=file name=file>
+        <input type=submit value=Upload>
+    </form>
 </body>
 </html>
